@@ -1,0 +1,1579 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  User,
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  PlusCircle,
+  LogOut,
+  Send,
+  Building,
+  Shield,
+  Briefcase,
+  Calendar,
+  FileSpreadsheet,
+  Check,
+  X,
+  ChevronRight,
+  TrendingUp,
+  DollarSign,
+  Filter,
+  Search,
+  Bell,
+  Trash2,
+  Edit,
+  UserCheck,
+  UserPlus,
+  ArrowRightLeft,
+  PieChart,
+  HelpCircle,
+  Mail,
+  Award
+} from 'lucide-react';
+
+// Initial Employees List
+const INITIAL_EMPLOYEES = [
+  { id: 'EMP-001', name: 'Budi Santoso', email: 'budi.santoso@gmail.com', role: 'Karyawan', dept: 'Engineering', managerId: 'MGR-001', hourlyRate: 45000, avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150' },
+  { id: 'EMP-002', name: 'Siti Rahma', email: 'siti.rahma@gmail.com', role: 'Karyawan', dept: 'Engineering', managerId: 'MGR-001', hourlyRate: 45000, avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150' },
+  { id: 'EMP-003', name: 'Rian Hidayat', email: 'rian.hidayat@gmail.com', role: 'Karyawan', dept: 'Marketing', managerId: 'MGR-002', hourlyRate: 40000, avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150' },
+  { id: 'EMP-004', name: 'Dewi Lestari', email: 'dewi.lestari@gmail.com', role: 'Karyawan', dept: 'Finance', managerId: 'MGR-002', hourlyRate: 42000, avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150' },
+  { id: 'MGR-001', name: 'Hendrik Pratama', email: 'hendrik.pratama@gmail.com', role: 'Atasan', dept: 'Engineering', managerId: '', hourlyRate: 65000, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
+  { id: 'MGR-002', name: 'Maya Indah', email: 'maya.indah@gmail.com', role: 'Atasan', dept: 'Marketing & Finance', managerId: '', hourlyRate: 65000, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
+  { id: 'HRD-001', name: 'Agus Wijaya (HRD)', email: 'hrd.agus@gmail.com', role: 'HRD', dept: 'Human Resources', managerId: '', hourlyRate: 60000, avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' }
+];
+
+// Initial Overtime Records (Both top-down and bottom-up)
+const INITIAL_OVERTIMES = [
+  {
+    id: 'OT-101',
+    type: 'REQUEST', // Karyawan ke Atasan
+    employeeId: 'EMP-001',
+    employeeName: 'Budi Santoso',
+    managerId: 'MGR-001',
+    managerName: 'Hendrik Pratama',
+    dept: 'Engineering',
+    date: '2026-10-08',
+    startTime: '17:00',
+    endTime: '20:00',
+    hours: 3,
+    task: 'Bug fixing rilis server produksi & deployment API v2',
+    rate: 45000,
+    estimatedPay: 135000,
+    status: 'APPROVED', // PENDING, APPROVED, REJECTED
+    employeeResponse: 'ACCEPTED', // ACCEPTED, DECLINED (for top-down assignment)
+    managerNote: 'Disetujui. Pastikan buat backup log server.',
+    employeeNote: '',
+    createdAt: '2026-10-08 14:20'
+  },
+  {
+    id: 'OT-102',
+    type: 'ASSIGNMENT', // Atasan ke Karyawan
+    employeeId: 'EMP-002',
+    employeeName: 'Siti Rahma',
+    managerId: 'MGR-001',
+    managerName: 'Hendrik Pratama',
+    dept: 'Engineering',
+    date: '2026-10-10',
+    startTime: '18:00',
+    endTime: '21:00',
+    hours: 3,
+    task: 'Persiapan materi migrasi database QA ke Staging',
+    rate: 45000,
+    estimatedPay: 135000,
+    status: 'APPROVED',
+    employeeResponse: 'PENDING', // Karyawan belum respon tugas dari atasan
+    managerNote: 'Tolong bantu tim frontend selesaikan payload.',
+    employeeNote: '',
+    createdAt: '2026-10-09 10:00'
+  },
+  {
+    id: 'OT-103',
+    type: 'REQUEST',
+    employeeId: 'EMP-003',
+    employeeName: 'Rian Hidayat',
+    managerId: 'MGR-002',
+    managerName: 'Maya Indah',
+    dept: 'Marketing',
+    date: '2026-10-09',
+    startTime: '17:30',
+    endTime: '19:30',
+    hours: 2,
+    task: 'Penyusunan materi campaign promo akhir tahun',
+    rate: 40000,
+    estimatedPay: 80000,
+    status: 'PENDING',
+    employeeResponse: 'ACCEPTED',
+    managerNote: '',
+    employeeNote: '',
+    createdAt: '2026-10-09 11:30'
+  },
+  {
+    id: 'OT-104',
+    type: 'ASSIGNMENT',
+    employeeId: 'EMP-004',
+    employeeName: 'Dewi Lestari',
+    managerId: 'MGR-002',
+    managerName: 'Maya Indah',
+    dept: 'Finance',
+    date: '2026-10-07',
+    startTime: '17:00',
+    endTime: '21:00',
+    hours: 4,
+    task: 'Rekap Laporan Keuangan Kuartal III & Pajak',
+    rate: 42000,
+    estimatedPay: 168000,
+    status: 'APPROVED',
+    employeeResponse: 'DECLINED',
+    managerNote: 'Tugas penting laporan bulanan.',
+    employeeNote: 'Mohon maaf Bu, ada keperluan keluarga mendadak di jam tersebut.',
+    createdAt: '2026-10-06 16:00'
+  }
+];
+
+export default function App() {
+  const [employees, setEmployees] = useState(INITIAL_EMPLOYEES);
+  const [overtimes, setOvertimes] = useState(INITIAL_OVERTIMES);
+  
+  // Auth state
+  const [currentUser, setCurrentUser] = useState(INITIAL_EMPLOYEES[0]); // default Budi (Karyawan)
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Active Tab View
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, my-requests, give-overtime, approvals, employee-mgr, report
+
+  // UI Toast State
+  const [toast, setToast] = useState(null);
+
+  // Form Modals / Drawer State
+  const [showReqModal, setShowReqModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showEmpModal, setShowEmpModal] = useState(false);
+  const [editingEmp, setEditingEmp] = useState(null);
+
+  // Action Modals (Approve/Reject or Accept/Decline)
+  const [actionItem, setActionItem] = useState(null);
+  const [actionType, setActionType] = useState(''); // 'APPROVE', 'REJECT', 'ACCEPT', 'DECLINE'
+  const [actionNote, setActionNote] = useState('');
+
+  // Search & Filters
+  const [filterDept, setFilterDept] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Toast Helper
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  // Auto-switch tabs if active tab is invalid for role
+  useEffect(() => {
+    if (currentUser.role === 'Karyawan' && ['approvals', 'employee-mgr', 'give-overtime'].includes(activeTab)) {
+      setActiveTab('dashboard');
+    } else if (currentUser.role === 'Atasan' && ['employee-mgr'].includes(activeTab)) {
+      setActiveTab('dashboard');
+    }
+  }, [currentUser, activeTab]);
+
+  const handleRoleSwitch = (empId) => {
+    const selected = employees.find(e => e.id === empId);
+    if (selected) {
+      setCurrentUser(selected);
+      setIsLoggedIn(true);
+      showToast(`Login sebagai Google Account: ${selected.name} (${selected.role})`, 'info');
+    }
+  };
+
+  // Karyawan: Submit Bottom-up Overtime Request
+  const handleCreateRequest = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const date = formData.get('date');
+    const startTime = formData.get('startTime');
+    const endTime = formData.get('endTime');
+    const task = formData.get('task');
+
+    if (!date || !startTime || !endTime || !task) {
+      showToast('Harap isi semua bidang form pengajuan', 'error');
+      return;
+    }
+
+    // Calculate hours
+    const startH = parseInt(startTime.split(':')[0]);
+    const startM = parseInt(startTime.split(':')[1]);
+    const endH = parseInt(endTime.split(':')[0]);
+    const endM = parseInt(endTime.split(':')[1]);
+    let diff = (endH + endM / 60) - (startH + startM / 60);
+    if (diff <= 0) diff += 24;
+    const hours = Math.round(diff * 10) / 10;
+
+    const manager = employees.find(e => e.id === currentUser.managerId) || employees.find(e => e.role === 'Atasan');
+
+    const newOt = {
+      id: `OT-${Date.now().toString().slice(-4)}`,
+      type: 'REQUEST',
+      employeeId: currentUser.id,
+      employeeName: currentUser.name,
+      managerId: manager ? manager.id : 'MGR-001',
+      managerName: manager ? manager.name : 'Hendrik Pratama',
+      dept: currentUser.dept,
+      date,
+      startTime,
+      endTime,
+      hours,
+      task,
+      rate: currentUser.hourlyRate,
+      estimatedPay: hours * currentUser.hourlyRate,
+      status: 'PENDING',
+      employeeResponse: 'ACCEPTED',
+      managerNote: '',
+      employeeNote: '',
+      createdAt: new Date().toISOString().replace('T', ' ').slice(0, 16)
+    };
+
+    setOvertimes([newOt, ...overtimes]);
+    setShowReqModal(false);
+    showToast('Pengajuan lembur berhasil dikirim ke atasan!');
+  };
+
+  // Atasan: Assign Overtime to Employee (Top-Down)
+  const handleAssignOvertime = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const empId = formData.get('employeeId');
+    const date = formData.get('date');
+    const startTime = formData.get('startTime');
+    const endTime = formData.get('endTime');
+    const task = formData.get('task');
+
+    const emp = employees.find(e => e.id === empId);
+    if (!emp) {
+      showToast('Pilih karyawan tujuan', 'error');
+      return;
+    }
+
+    const startH = parseInt(startTime.split(':')[0]);
+    const startM = parseInt(startTime.split(':')[1]);
+    const endH = parseInt(endTime.split(':')[0]);
+    const endM = parseInt(endTime.split(':')[1]);
+    let diff = (endH + endM / 60) - (startH + startM / 60);
+    if (diff <= 0) diff += 24;
+    const hours = Math.round(diff * 10) / 10;
+
+    const newOt = {
+      id: `OT-${Date.now().toString().slice(-4)}`,
+      type: 'ASSIGNMENT',
+      employeeId: emp.id,
+      employeeName: emp.name,
+      managerId: currentUser.id,
+      managerName: currentUser.name,
+      dept: emp.dept,
+      date,
+      startTime,
+      endTime,
+      hours,
+      task,
+      rate: emp.hourlyRate,
+      estimatedPay: hours * emp.hourlyRate,
+      status: 'APPROVED', // Pre-approved by manager, awaits employee accept/decline
+      employeeResponse: 'PENDING',
+      managerNote: 'Penugasan langsung dari Atasan',
+      employeeNote: '',
+      createdAt: new Date().toISOString().replace('T', ' ').slice(0, 16)
+    };
+
+    setOvertimes([newOt, ...overtimes]);
+    setShowAssignModal(false);
+    showToast(`Penugasan lembur berhasil diberikan kepada ${emp.name}`);
+  };
+
+  // Process Approval / Rejection or Accept / Decline Action
+  const handleProcessAction = () => {
+    if (!actionItem) return;
+
+    setOvertimes(overtimes.map(ot => {
+      if (ot.id === actionItem.id) {
+        if (actionType === 'APPROVE') {
+          return { ...ot, status: 'APPROVED', managerNote: actionNote || 'Disetujui oleh atasan.' };
+        } else if (actionType === 'REJECT') {
+          return { ...ot, status: 'REJECTED', managerNote: actionNote || 'Ditolak oleh atasan.' };
+        } else if (actionType === 'ACCEPT') {
+          return { ...ot, employeeResponse: 'ACCEPTED', employeeNote: actionNote || 'Diterima oleh karyawan.' };
+        } else if (actionType === 'DECLINE') {
+          return { ...ot, employeeResponse: 'DECLINED', employeeNote: actionNote || 'Ditolak oleh karyawan.' };
+        }
+      }
+      return ot;
+    }));
+
+    showToast(`Status lembur #${actionItem.id} berhasil diperbarui!`);
+    setActionItem(null);
+    setActionNote('');
+  };
+
+  // HRD: Add / Update Employee
+  const handleSaveEmployee = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const name = formData.get('name');
+    const email = formData.get('email');
+    const role = formData.get('role');
+    const dept = formData.get('dept');
+    const managerId = formData.get('managerId');
+    const hourlyRate = parseInt(formData.get('hourlyRate')) || 40000;
+
+    if (editingEmp) {
+      setEmployees(employees.map(e => e.id === editingEmp.id ? {
+        ...e, name, email, role, dept, managerId, hourlyRate
+      } : e));
+      showToast(`Data karyawan ${name} berhasil diperbarui`);
+    } else {
+      const newEmp = {
+        id: role === 'Atasan' ? `MGR-${Date.now().toString().slice(-3)}` : `EMP-${Date.now().toString().slice(-3)}`,
+        name,
+        email,
+        role,
+        dept,
+        managerId,
+        hourlyRate,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`
+      };
+      setEmployees([...employees, newEmp]);
+      showToast(`Karyawan baru ${name} berhasil ditambahkan!`);
+    }
+    setShowEmpModal(false);
+    setEditingEmp(null);
+  };
+
+  const handleDeleteEmployee = (id) => {
+    if (employees.length <= 1) {
+      showToast('Tidak bisa menghapus karyawan terakhir', 'error');
+      return;
+    }
+    setEmployees(employees.filter(e => e.id !== id));
+    showToast('Data karyawan berhasil dihapus');
+  };
+
+  const stats = useMemo(() => {
+    let relevantOvertimes = overtimes;
+
+    if (currentUser.role === 'Karyawan') {
+      relevantOvertimes = overtimes.filter(o => o.employeeId === currentUser.id);
+    } else if (currentUser.role === 'Atasan') {
+      relevantOvertimes = overtimes.filter(o => o.managerId === currentUser.id);
+    }
+
+    const totalHours = relevantOvertimes
+      .filter(o => o.status === 'APPROVED' && o.employeeResponse === 'ACCEPTED')
+      .reduce((acc, curr) => acc + curr.hours, 0);
+
+    const totalCost = relevantOvertimes
+      .filter(o => o.status === 'APPROVED' && o.employeeResponse === 'ACCEPTED')
+      .reduce((acc, curr) => acc + curr.estimatedPay, 0);
+
+    const pendingApprovals = overtimes.filter(o => o.managerId === currentUser.id && o.status === 'PENDING').length;
+    const pendingMyResponses = overtimes.filter(o => o.employeeId === currentUser.id && o.type === 'ASSIGNMENT' && o.employeeResponse === 'PENDING').length;
+
+    return {
+      totalCount: relevantOvertimes.length,
+      totalHours,
+      totalCost,
+      pendingApprovals,
+      pendingMyResponses
+    };
+  }, [overtimes, currentUser]);
+
+  // Filtered List Helper
+  const filteredOvertimes = useMemo(() => {
+    return overtimes.filter(item => {
+      // Role scope filter
+      if (currentUser.role === 'Karyawan' && item.employeeId !== currentUser.id) return false;
+      if (currentUser.role === 'Atasan' && item.managerId !== currentUser.id && item.employeeId !== currentUser.id) return false;
+
+      // Department filter
+      if (filterDept !== 'ALL' && item.dept !== filterDept) return false;
+
+      // Status Filter
+      if (filterStatus === 'PENDING' && item.status !== 'PENDING') return false;
+      if (filterStatus === 'APPROVED' && item.status !== 'APPROVED') return false;
+      if (filterStatus === 'REJECTED' && item.status !== 'REJECTED') return false;
+
+      // Search Query
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return item.employeeName.toLowerCase().includes(q) ||
+               item.task.toLowerCase().includes(q) ||
+               item.id.toLowerCase().includes(q);
+      }
+
+      return true;
+    });
+  }, [overtimes, currentUser, filterDept, filterStatus, searchQuery]);
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col antialiased">
+      {/* Top Banner Navigation & Gmail Simulation Bar */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          
+          {/* Logo & Brand */}
+          <div className="flex items-center space-x-3">
+            <div className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-indigo-200 flex items-center justify-center">
+              <Clock className="w-6 h-6 stroke-[2.5]" />
+            </div>
+            <div>
+              <span className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+                Overtime<span className="text-indigo-600">Hub</span>
+              </span>
+              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">Sistem Manajemen Lembur Perusahaan</p>
+            </div>
+          </div>
+
+          {/* Quick Account/Role Switcher & Profile Badge */}
+          <div className="flex items-center space-x-3">
+            {/* Multi-role Switcher Dropdown */}
+            <div className="relative group">
+              <button 
+                onClick={() => setShowLoginModal(true)}
+                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200/80 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 transition"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="hidden md:inline">Ganti Akun Google / Role</span>
+                <span className="md:hidden">Switch</span>
+              </button>
+            </div>
+
+            {/* Profile Pill */}
+            {isLoggedIn ? (
+              <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
+                <img 
+                  src={currentUser.avatar} 
+                  alt={currentUser.name} 
+                  className="w-9 h-9 rounded-full object-cover ring-2 ring-indigo-500/30"
+                />
+                <div className="hidden lg:block text-left">
+                  <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    {currentUser.name}
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      currentUser.role === 'HRD' ? 'bg-purple-100 text-purple-700' :
+                      currentUser.role === 'Atasan' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {currentUser.role}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 truncate max-w-[170px]">{currentUser.email}</div>
+                </div>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setShowLoginModal(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow"
+              >
+                <User className="w-4 h-4" />
+                Sign in with Google
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Body Grid with Sidebar & Content */}
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row gap-6">
+        
+        {/* Left Sidebar Navigation */}
+        <aside className="w-full md:w-64 flex-shrink-0 space-y-4">
+          
+          {/* User Status Card */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center md:text-left">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold uppercase text-slate-400 block tracking-wider">Akses Peran</span>
+                <span className="font-bold text-slate-800 text-sm">{currentUser.role} - {currentUser.dept}</span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 border-t border-slate-100 pt-2">
+              Atasan Direct: <span className="font-semibold text-slate-700">{
+                employees.find(e => e.id === currentUser.managerId)?.name || 'Direct Board'
+              }</span>
+            </p>
+          </div>
+
+          {/* Navigation Menu */}
+          <nav className="bg-white rounded-xl border border-slate-200 p-2 shadow-sm space-y-1">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition ${
+                activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <PieChart className="w-4 h-4" />
+                <span>Dashboard Ringkasan</span>
+              </div>
+            </button>
+
+            {/* Karyawan Specific Menu */}
+            {currentUser.role === 'Karyawan' && (
+              <button
+                onClick={() => setActiveTab('my-requests')}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition ${
+                  activeTab === 'my-requests' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-4 h-4" />
+                  <span>Lembur Saya</span>
+                </div>
+                {stats.pendingMyResponses > 0 && (
+                  <span className="bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-full font-extrabold animate-pulse">
+                    {stats.pendingMyResponses} Tugas Baru
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* Atasan Specific Menu */}
+            {(currentUser.role === 'Atasan' || currentUser.role === 'HRD') && (
+              <>
+                <button
+                  onClick={() => setActiveTab('give-overtime')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition ${
+                    activeTab === 'give-overtime' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Send className="w-4 h-4" />
+                    <span>Beri Lembur Karyawan</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('approvals')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition ${
+                    activeTab === 'approvals' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <UserCheck className="w-4 h-4" />
+                    <span>Persetujuan Lembur</span>
+                  </div>
+                  {stats.pendingApprovals > 0 && (
+                    <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-extrabold">
+                      {stats.pendingApprovals} Pendaftaran
+                    </span>
+                  )}
+                </button>
+              </>
+            )}
+
+            {/* HRD Specific Menu */}
+            {currentUser.role === 'HRD' && (
+              <>
+                <div className="my-2 border-t border-slate-100"></div>
+                <div className="px-3 py-1 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  Menu Master HRD
+                </div>
+                <button
+                  onClick={() => setActiveTab('employee-mgr')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition ${
+                    activeTab === 'employee-mgr' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4" />
+                    <span>Kelola Karyawan</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('report')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition ${
+                    activeTab === 'report' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>Rekap & Biaya Perusahaan</span>
+                  </div>
+                </button>
+              </>
+            )}
+          </nav>
+
+          {/* Quick Action Button */}
+          {currentUser.role === 'Karyawan' && (
+            <button
+              onClick={() => setShowReqModal(true)}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-xs shadow-md shadow-emerald-200 flex items-center justify-center gap-2 transition"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Ajukan Lembur Mandiri
+            </button>
+          )}
+
+          {currentUser.role === 'Atasan' && (
+            <button
+              onClick={() => setShowAssignModal(true)}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-xs shadow-md shadow-indigo-200 flex items-center justify-center gap-2 transition"
+            >
+              <Send className="w-4 h-4" />
+              Tugaskan Lembur Bawahan
+            </button>
+          )}
+        </aside>
+
+        {/* Right Content Area */}
+        <main className="flex-1 space-y-6">
+
+          {}
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6">
+              
+              {/* Welcome Header */}
+              <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div className="relative z-10">
+                  <span className="bg-indigo-500/30 text-indigo-200 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-400/30 inline-block mb-3">
+                    Google Authentication Verified
+                  </span>
+                  <h1 className="text-2xl font-bold tracking-tight">Selamat Datang, {currentUser.name}!</h1>
+                  <p className="text-indigo-200 text-xs mt-1 max-w-xl">
+                    Sistem Manajemen Lembur terintegrasi. Anda masuk sebagai <span className="font-semibold text-white">{currentUser.role}</span> di departemen <span className="font-semibold text-white">{currentUser.dept}</span>.
+                  </p>
+                </div>
+                <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-x-6 translate-y-6">
+                  <Clock className="w-64 h-64" />
+                </div>
+              </div>
+
+              {/* Statistics Metric Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                  <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                    <Clock className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Jam Lembur</span>
+                    <p className="text-xl font-black text-slate-800">{stats.totalHours} Jam</p>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <DollarSign className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Est. Biaya Lembur</span>
+                    <p className="text-xl font-black text-slate-800">Rp {stats.totalCost.toLocaleString('id-ID')}</p>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                  <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Menunggu Approval</span>
+                    <p className="text-xl font-black text-slate-800">{stats.pendingApprovals} Tugas</p>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                  <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                    <CheckCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Transaksi</span>
+                    <p className="text-xl font-black text-slate-800">{stats.totalCount} Pengajuan</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pending Action Highlights for Employee */}
+              {currentUser.role === 'Karyawan' && stats.pendingMyResponses > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-amber-100 text-amber-700 rounded-lg">
+                      <Bell className="w-5 h-5 animate-bounce" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-amber-900">Penugasan Lembur dari Atasan Perlu Respon Anda</h4>
+                      <p className="text-[11px] text-amber-700">Atasan Anda memberikan tugas lembur baru. Silakan terima atau tolak.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setActiveTab('my-requests')}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                  >
+                    Tinjau Sekarang
+                  </button>
+                </div>
+              )}
+
+              {/* Recent Activity Table */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">Aktivitas Lembur Terkini</h3>
+                    <p className="text-xs text-slate-500">Daftar transaksi pengajuan dan penugasan lembur terbaru</p>
+                  </div>
+                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
+                    {filteredOvertimes.length} Data
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-600">
+                    <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-100">
+                      <tr>
+                        <th className="p-3.5">ID / Jenis</th>
+                        <th className="p-3.5">Karyawan</th>
+                        <th className="p-3.5">Tanggal & Jam</th>
+                        <th className="p-3.5">Pekerjaan / Alasan</th>
+                        <th className="p-3.5">Atasan</th>
+                        <th className="p-3.5">Status Approval</th>
+                        <th className="p-3.5">Respon Karyawan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredOvertimes.slice(0, 5).map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50/80 transition">
+                          <td className="p-3.5">
+                            <span className="font-mono font-bold text-slate-800 block">{item.id}</span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                              item.type === 'ASSIGNMENT' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                            }`}>
+                              {item.type === 'ASSIGNMENT' ? 'Top-Down (Atasan)' : 'Bottom-Up (Mandiri)'}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <div className="font-bold text-slate-800">{item.employeeName}</div>
+                            <div className="text-[10px] text-slate-400">{item.dept}</div>
+                          </td>
+                          <td className="p-3.5">
+                            <div className="font-medium text-slate-700">{item.date}</div>
+                            <div className="text-[11px] text-slate-500">{item.startTime} - {item.endTime} ({item.hours} Jam)</div>
+                          </td>
+                          <td className="p-3.5 max-w-xs truncate" title={item.task}>
+                            {item.task}
+                          </td>
+                          <td className="p-3.5 font-medium text-slate-700">
+                            {item.managerName}
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2 py-1 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 ${
+                              item.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                              item.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {item.status === 'APPROVED' && <CheckCircle className="w-3 h-3" />}
+                              {item.status === 'REJECTED' && <XCircle className="w-3 h-3" />}
+                              {item.status === 'PENDING' && <Clock className="w-3 h-3" />}
+                              {item.status}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2 py-1 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 ${
+                              item.employeeResponse === 'ACCEPTED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                              item.employeeResponse === 'DECLINED' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {item.employeeResponse}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {}
+          {activeTab === 'my-requests' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Daftar Lembur Saya</h2>
+                  <p className="text-xs text-slate-500">Kelola pengajuan lembur mandiri dan respon penugasan dari atasan Anda</p>
+                </div>
+                <button
+                  onClick={() => setShowReqModal(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  + Buat Pengajuan Baru
+                </button>
+              </div>
+
+              {/* List of Overtimes for Current Employee */}
+              <div className="space-y-3">
+                {overtimes.filter(o => o.employeeId === currentUser.id).length === 0 ? (
+                  <div className="bg-white p-8 text-center rounded-xl border border-slate-200 text-slate-400">
+                    <Clock className="w-12 h-12 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm font-medium">Belum ada riwayat lembur untuk akun Anda.</p>
+                  </div>
+                ) : (
+                  overtimes.filter(o => o.employeeId === currentUser.id).map(item => (
+                    <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:border-indigo-300 transition space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-indigo-600">{item.id}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            item.type === 'ASSIGNMENT' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {item.type === 'ASSIGNMENT' ? 'Penugasan Atasan' : 'Pengajuan Mandiri'}
+                          </span>
+                          <span className="text-xs text-slate-400">• {item.createdAt}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-700">Status Atasan:</span>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold ${
+                            item.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                            item.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                        <div>
+                          <span className="text-slate-400 font-semibold block">Tanggal & Waktu</span>
+                          <p className="font-bold text-slate-800 mt-0.5">{item.date}</p>
+                          <p className="text-slate-600">{item.startTime} - {item.endTime} ({item.hours} Jam)</p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-semibold block">Deskripsi Tugas / Pekerjaan</span>
+                          <p className="font-medium text-slate-800 mt-0.5">{item.task}</p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-semibold block">Atasan / Evaluator</span>
+                          <p className="font-bold text-slate-800 mt-0.5">{item.managerName}</p>
+                          <p className="text-emerald-700 font-bold">Estimasi: Rp {item.estimatedPay.toLocaleString('id-ID')}</p>
+                        </div>
+                      </div>
+
+                      {/* Employee Response Action Box for Top-Down Assignments */}
+                      {item.type === 'ASSIGNMENT' && item.employeeResponse === 'PENDING' && (
+                        <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                          <div className="text-xs">
+                            <span className="font-bold text-amber-900 block">Penugasan dari Atasan memerlukan konfirmasi Anda:</span>
+                            <span className="text-amber-700">Apakah Anda bersedia menerima tugas lembur ini?</span>
+                          </div>
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <button
+                              onClick={() => {
+                                setActionItem(item);
+                                setActionType('ACCEPT');
+                              }}
+                              className="flex-1 sm:flex-none px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1 shadow-sm"
+                            >
+                              <Check className="w-3.5 h-3.5" /> Terima (Accept)
+                            </button>
+                            <button
+                              onClick={() => {
+                                setActionItem(item);
+                                setActionType('DECLINE');
+                              }}
+                              className="flex-1 sm:flex-none px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1 shadow-sm"
+                            >
+                              <X className="w-3.5 h-3.5" /> Tolak (Decline)
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Display response status if already answered */}
+                      {item.employeeResponse !== 'PENDING' && (
+                        <div className="text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center justify-between">
+                          <span className="text-slate-500">Respon Anda:</span>
+                          <span className={`font-bold ${item.employeeResponse === 'ACCEPTED' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                            {item.employeeResponse === 'ACCEPTED' ? '✓ Anda Menyutujui Penugasan Ini' : '✕ Anda Menolak Penugasan Ini'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Manager Note */}
+                      {item.managerNote && (
+                        <div className="text-xs text-slate-500 italic bg-indigo-50/50 p-2 rounded">
+                          Catatan Atasan: "{item.managerNote}"
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {}
+          {(activeTab === 'approvals' || activeTab === 'give-overtime') && (currentUser.role === 'Atasan' || currentUser.role === 'HRD') && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Kelola & Persetujuan Lembur Tim</h2>
+                  <p className="text-xs text-slate-500">Setujui pengajuan bawahan atau berikan penugasan lembur baru</p>
+                </div>
+                <button
+                  onClick={() => setShowAssignModal(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow"
+                >
+                  <Send className="w-4 h-4" />
+                  + Berikan Penugasan Lembur
+                </button>
+              </div>
+
+              {/* Approval Table */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700">Daftar Pengajuan Lembur Masuk</span>
+                  <div className="flex items-center gap-2">
+                    <select 
+                      value={filterStatus} 
+                      onChange={e => setFilterStatus(e.target.value)}
+                      className="text-xs border border-slate-200 rounded-lg px-2.5 py-1 bg-white font-medium text-slate-700"
+                    >
+                      <option value="ALL">Semua Status</option>
+                      <option value="PENDING">Menunggu (Pending)</option>
+                      <option value="APPROVED">Disetujui</option>
+                      <option value="REJECTED">Ditolak</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {overtimes.filter(o => (currentUser.role === 'HRD' || o.managerId === currentUser.id)).length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 text-xs">Belum ada pengajuan lembur bawahan.</div>
+                  ) : (
+                    overtimes
+                      .filter(o => (currentUser.role === 'HRD' || o.managerId === currentUser.id))
+                      .filter(o => filterStatus === 'ALL' || o.status === filterStatus)
+                      .map(item => (
+                        <div key={item.id} className="p-4 hover:bg-slate-50/70 transition space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold text-indigo-600">{item.id}</span>
+                              <span className="font-bold text-slate-800 text-xs">{item.employeeName}</span>
+                              <span className="text-slate-400 text-xs">({item.dept})</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                                item.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                                item.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                Status: {item.status}
+                              </span>
+                              <span className="text-xs text-slate-400">
+                                Respon Karyawan: <strong className="text-slate-700">{item.employeeResponse}</strong>
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-slate-600 bg-slate-50/80 p-3 rounded-lg border border-slate-100">
+                            <div>
+                              <strong className="text-slate-700 block">Jadwal Lembur:</strong>
+                              {item.date} ({item.startTime} - {item.endTime}) • {item.hours} Jam
+                            </div>
+                            <div>
+                              <strong className="text-slate-700 block">Tugas Pekerjaan:</strong>
+                              {item.task}
+                            </div>
+                            <div>
+                              <strong className="text-slate-700 block">Biaya Lembur:</strong>
+                              Rp {item.estimatedPay.toLocaleString('id-ID')}
+                            </div>
+                          </div>
+
+                          {/* Approval Actions for Pending items */}
+                          {item.status === 'PENDING' && (
+                            <div className="flex items-center justify-end gap-2 pt-1">
+                              <button
+                                onClick={() => {
+                                  setActionItem(item);
+                                  setActionType('APPROVE');
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" /> Approve (Setujui)
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActionItem(item);
+                                  setActionType('REJECT');
+                                }}
+                                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm"
+                              >
+                                <XCircle className="w-3.5 h-3.5" /> Reject (Tolak)
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {}
+          {activeTab === 'employee-mgr' && currentUser.role === 'HRD' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Kelola Data Master Karyawan</h2>
+                  <p className="text-xs text-slate-500">Tambah, edit, dan atur relasi Karyawan - Atasan langsung & Tarif Lembur</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingEmp(null);
+                    setShowEmpModal(true);
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  + Tambah Karyawan Baru
+                </button>
+              </div>
+
+              {/* Employee Table */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <table className="w-full text-left text-xs text-slate-600">
+                  <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-100">
+                    <tr>
+                      <th className="p-3.5">Karyawan</th>
+                      <th className="p-3.5">Peran (Role)</th>
+                      <th className="p-3.5">Departemen</th>
+                      <th className="p-3.5">Atasan Langsung</th>
+                      <th className="p-3.5">Tarif Lembur/Jam</th>
+                      <th className="p-3.5 text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {employees.map(emp => (
+                      <tr key={emp.id} className="hover:bg-slate-50 transition">
+                        <td className="p-3.5 flex items-center space-x-3">
+                          <img src={emp.avatar} alt={emp.name} className="w-8 h-8 rounded-full border" />
+                          <div>
+                            <div className="font-bold text-slate-800">{emp.name}</div>
+                            <div className="text-[10px] text-slate-400">{emp.email}</div>
+                          </div>
+                        </td>
+                        <td className="p-3.5">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            emp.role === 'HRD' ? 'bg-purple-100 text-purple-700' :
+                            emp.role === 'Atasan' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {emp.role}
+                          </span>
+                        </td>
+                        <td className="p-3.5 font-medium text-slate-700">{emp.dept}</td>
+                        <td className="p-3.5 text-slate-600 font-medium">
+                          {employees.find(m => m.id === emp.managerId)?.name || '-'}
+                        </td>
+                        <td className="p-3.5 font-bold text-slate-800">
+                          Rp {emp.hourlyRate.toLocaleString('id-ID')}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => {
+                                setEditingEmp(emp);
+                                setShowEmpModal(true);
+                              }}
+                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded"
+                              title="Edit Data"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEmployee(emp.id)}
+                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {}
+          {activeTab === 'report' && currentUser.role === 'HRD' && (
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Rekapitulasi Lembur & Laporan Biaya</h2>
+                  <p className="text-xs text-slate-500">Pemantauan seluruh transaksi lembur perusahaan untuk penggajian (Payroll)</p>
+                </div>
+                <button
+                  onClick={() => showToast('Laporan Rekap Lembur berhasil di-export ke Excel / CSV!')}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Export Data Rekap
+                </button>
+              </div>
+
+              {/* Department Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {['Engineering', 'Marketing', 'Finance'].map(dept => {
+                  const deptOts = overtimes.filter(o => o.dept === dept && o.status === 'APPROVED');
+                  const hours = deptOts.reduce((a, b) => a + b.hours, 0);
+                  const cost = deptOts.reduce((a, b) => a + b.estimatedPay, 0);
+
+                  return (
+                    <div key={dept} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">{dept}</span>
+                        <Building className="w-4 h-4 text-slate-400" />
+                      </div>
+                      <div className="text-lg font-bold text-slate-800">{hours} Total Jam</div>
+                      <p className="text-xs text-emerald-600 font-bold mt-1">Rp {cost.toLocaleString('id-ID')}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Full Company Overtime Audit Log */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-3 bg-slate-50 border-b border-slate-100 font-bold text-xs text-slate-700">
+                  Riwayat Lengkap Lembur Seluruh Karyawan
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-600">
+                    <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-100">
+                      <tr>
+                        <th className="p-3">ID</th>
+                        <th className="p-3">Tanggal</th>
+                        <th className="p-3">Karyawan</th>
+                        <th className="p-3">Atasan</th>
+                        <th className="p-3">Jam</th>
+                        <th className="p-3">Tarif/Jam</th>
+                        <th className="p-3">Total Kompensasi</th>
+                        <th className="p-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {overtimes.map(ot => (
+                        <tr key={ot.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-mono font-bold text-indigo-600">{ot.id}</td>
+                          <td className="p-3">{ot.date}</td>
+                          <td className="p-3 font-medium text-slate-800">{ot.employeeName}</td>
+                          <td className="p-3">{ot.managerName}</td>
+                          <td className="p-3 font-bold">{ot.hours} Jam</td>
+                          <td className="p-3">Rp {ot.rate.toLocaleString('id-ID')}</td>
+                          <td className="p-3 font-bold text-emerald-700">Rp {ot.estimatedPay.toLocaleString('id-ID')}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              ot.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                              ot.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {ot.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+
+      {}
+      
+      {/* 1. Modal Login Google & Role Switcher */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-bold text-slate-900 text-base">Simulasi Google Account Login</h3>
+              </div>
+              <button onClick={() => setShowLoginModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Pilih salah satu akun terverifikasi di bawah ini untuk mensimulasikan alur login Google/Gmail sesuai peran (Karyawan, Atasan, atau HRD):
+            </p>
+
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+              {employees.map((emp) => (
+                <button
+                  key={emp.id}
+                  onClick={() => {
+                    handleRoleSwitch(emp.id);
+                    setShowLoginModal(false);
+                  }}
+                  className={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition ${
+                    currentUser.id === emp.id ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <img src={emp.avatar} alt={emp.name} className="w-10 h-10 rounded-full border" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        {emp.name}
+                        {currentUser.id === emp.id && <Check className="w-3.5 h-3.5 text-indigo-600" />}
+                      </div>
+                      <div className="text-[11px] text-slate-500">{emp.email}</div>
+                    </div>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                    emp.role === 'HRD' ? 'bg-purple-100 text-purple-700' :
+                    emp.role === 'Atasan' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {emp.role}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="pt-2 text-center border-t border-slate-100">
+              <span className="text-[11px] text-slate-400">OAuth 2.0 Single Sign-On Enabled (Simulation Mode)</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Modal Pengajuan Lembur Mandiri (Karyawan) */}
+      {showReqModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-emerald-600" /> Form Pengajuan Lembur Mandiri
+              </h3>
+              <button onClick={() => setShowReqModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateRequest} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Tanggal Lembur</label>
+                <input 
+                  type="date" 
+                  name="date" 
+                  defaultValue={new Date().toISOString().slice(0, 10)}
+                  className="w-full border border-slate-300 rounded-lg p-2.5 font-medium" 
+                  required 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Jam Mulai</label>
+                  <input type="time" name="startTime" defaultValue="17:00" className="w-full border border-slate-300 rounded-lg p-2.5" required />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Jam Selesai</label>
+                  <input type="time" name="endTime" defaultValue="20:00" className="w-full border border-slate-300 rounded-lg p-2.5" required />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Atasan Penanggung Jawab (Evaluator)</label>
+                <input 
+                  type="text" 
+                  disabled 
+                  value={employees.find(e => e.id === currentUser.managerId)?.name || 'Hendrik Pratama (Manager)'}
+                  className="w-full bg-slate-100 border border-slate-200 rounded-lg p-2.5 font-bold text-slate-700 cursor-not-allowed" 
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Deskripsi Tugas & Target Pekerjaan</label>
+                <textarea 
+                  name="task" 
+                  rows="3" 
+                  placeholder="Jelaskan secara singkat pekerjaan yang akan dilakukan..."
+                  className="w-full border border-slate-300 rounded-lg p-2.5" 
+                  required
+                ></textarea>
+              </div>
+
+              <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-emerald-800 text-[11px]">
+                Tarif Lembur Anda: <strong>Rp {currentUser.hourlyRate.toLocaleString('id-ID')} / jam</strong>.
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setShowReqModal(false)}
+                  className="px-4 py-2 border border-slate-300 text-slate-600 font-bold rounded-lg hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow"
+                >
+                  Kirim Pengajuan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Modal Atasan Memberi Penugasan Lembur (Top-Down) */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                <Send className="w-5 h-5 text-indigo-600" /> Penugasan Lembur dari Atasan
+              </h3>
+              <button onClick={() => setShowAssignModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignOvertime} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Pilih Karyawan Bawahan</label>
+                <select name="employeeId" className="w-full border border-slate-300 rounded-lg p-2.5 font-semibold text-slate-800" required>
+                  {employees.filter(e => e.role === 'Karyawan').map(emp => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.dept}) - Rp {emp.hourlyRate.toLocaleString('id-ID')}/jam
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Tanggal Tugas Lembur</label>
+                <input 
+                  type="date" 
+                  name="date" 
+                  defaultValue={new Date().toISOString().slice(0, 10)}
+                  className="w-full border border-slate-300 rounded-lg p-2.5" 
+                  required 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Jam Mulai</label>
+                  <input type="time" name="startTime" defaultValue="17:00" className="w-full border border-slate-300 rounded-lg p-2.5" required />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Jam Selesai</label>
+                  <input type="time" name="endTime" defaultValue="20:00" className="w-full border border-slate-300 rounded-lg p-2.5" required />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Instruksi Tugas & Catatan Atasan</label>
+                <textarea 
+                  name="task" 
+                  rows="3" 
+                  placeholder="Instruksikan hal mendesak yang wajib dikerjakan karyawan..."
+                  className="w-full border border-slate-300 rounded-lg p-2.5" 
+                  required
+                ></textarea>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setShowAssignModal(false)}
+                  className="px-4 py-2 border border-slate-300 text-slate-600 font-bold rounded-lg hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow"
+                >
+                  Tugaskan Lembur
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Modal HRD: Tambah / Edit Karyawan */}
+      {showEmpModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-600" /> {editingEmp ? 'Edit Data Karyawan' : 'Tambah Karyawan Baru'}
+              </h3>
+              <button onClick={() => setShowEmpModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEmployee} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Nama Lengkap Karyawan</label>
+                <input 
+                  type="text" 
+                  name="name" 
+                  defaultValue={editingEmp?.name || ''} 
+                  placeholder="Contoh: Ahmad Rizky" 
+                  className="w-full border border-slate-300 rounded-lg p-2.5" 
+                  required 
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Email Google / Gmail Active</label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  defaultValue={editingEmp?.email || ''} 
+                  placeholder="ahmad.rizky@gmail.com" 
+                  className="w-full border border-slate-300 rounded-lg p-2.5" 
+                  required 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Peran Akses (Role)</label>
+                  <select name="role" defaultValue={editingEmp?.role || 'Karyawan'} className="w-full border border-slate-300 rounded-lg p-2.5">
+                    <option value="Karyawan">Karyawan</option>
+                    <option value="Atasan">Atasan / Manager</option>
+                    <option value="HRD">HRD Administrator</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Departemen</label>
+                  <select name="dept" defaultValue={editingEmp?.dept || 'Engineering'} className="w-full border border-slate-300 rounded-lg p-2.5">
+                    <option value="Engineering">Engineering</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Human Resources">Human Resources</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Atasan Direct</label>
+                  <select name="managerId" defaultValue={editingEmp?.managerId || 'MGR-001'} className="w-full border border-slate-300 rounded-lg p-2.5">
+                    <option value="">-- Tanpa Atasan Direct --</option>
+                    {employees.filter(e => e.role === 'Atasan').map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tarif Lembur per Jam (Rp)</label>
+                  <input 
+                    type="number" 
+                    name="hourlyRate" 
+                    defaultValue={editingEmp?.hourlyRate || 45000} 
+                    className="w-full border border-slate-300 rounded-lg p-2.5" 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setShowEmpModal(false)}
+                  className="px-4 py-2 border border-slate-300 text-slate-600 font-bold rounded-lg hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow"
+                >
+                  Simpan Data
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Modal Process Action Dialog (Approve/Reject or Accept/Decline) */}
+      {actionItem && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <h3 className="font-bold text-slate-900 text-base">
+              {actionType === 'APPROVE' && 'Setujui Pengajuan Lembur'}
+              {actionType === 'REJECT' && 'Tolak Pengajuan Lembur'}
+              {actionType === 'ACCEPT' && 'Terima Penugasan Lembur Atasan'}
+              {actionType === 'DECLINE' && 'Tolak Penugasan Lembur Atasan'}
+            </h3>
+
+            <p className="text-xs text-slate-600">
+              Transaksi ID: <strong className="font-mono text-indigo-600">{actionItem.id}</strong> ({actionItem.employeeName} - {actionItem.date})
+            </p>
+
+            <div>
+              <label className="block font-bold text-slate-700 text-xs mb-1">Berikan Alasan / Catatan Opsional:</label>
+              <textarea
+                value={actionNote}
+                onChange={e => setActionNote(e.target.value)}
+                placeholder="Tuliskan catatan penjelasan..."
+                className="w-full border border-slate-300 rounded-lg p-2.5 text-xs"
+                rows="3"
+              ></textarea>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setActionItem(null)}
+                className="px-4 py-2 border border-slate-300 text-slate-600 font-bold text-xs rounded-lg hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleProcessAction}
+                className={`px-5 py-2 text-white font-bold text-xs rounded-lg shadow ${
+                  ['APPROVE', 'ACCEPT'].includes(actionType) ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
+                }`}
+              >
+                Konfirmasi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-xl border text-xs font-bold flex items-center space-x-2 animate-in slide-in-from-bottom duration-300 ${
+          toast.type === 'error' ? 'bg-rose-600 text-white border-rose-700' :
+          toast.type === 'info' ? 'bg-indigo-600 text-white border-indigo-700' :
+          'bg-slate-900 text-white border-slate-800'
+        }`}>
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 mt-auto py-4 text-center text-xs text-slate-400">
+        OvertimeHub Enterprise &copy; 2026 - System Integrated with Google Workspace Authentication
+      </footer>
+    </div>
+  );
+}
